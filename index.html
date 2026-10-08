@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Körplan Demo</title>
+
+<!-- PWA / Hemskärm -->
+<meta name="application-name" content="Körplan Demo"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Körplan Demo"/>
+<meta name="theme-color" content="#3d7a3d"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+
+<!-- Ikon som inline SVG → data URI (fungerar utan server) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjM2Q3YTNkIi8+PHRleHQgeD0iOTAiIHk9IjEwNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSI5MCI+8J+agDwvdGV4dD48L3N2Zz4="/>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjM2Q3YTNkIi8+PHRleHQgeD0iOTAiIHk9IjEwNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSI5MCI+8J+agDwvdGV4dD48L3N2Zz4="/>
+
+<!-- Web App Manifest (inline) -->
+<script>
+const manifestData = {
+  name: "Körplan Demo",
+  short_name: "Körplan Demo",
+  description: "Körplan för rishögar, stubbar och kundbesök",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#f4f5f0",
+  theme_color: "#3d7a3d",
+  orientation: "portrait",
+  icons: [
+    {
+      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjM2Q3YTNkIi8+PHRleHQgeD0iOTAiIHk9IjEwNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSI5MCI+8J+agDwvdGV4dD48L3N2Zz4=",
+      sizes: "180x180",
+      type: "image/svg+xml",
+      purpose: "any maskable"
+    }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type:'application/json'});
+const manifestUrl = URL.createObjectURL(blob);
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = manifestUrl;
+document.currentScript.after(link);
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:#0d1117;color:#1a2a1a;height:100dvh;overflow:hidden;position:relative;}
+#header{background:rgba(10,14,20,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.08);padding:6px 12px;display:flex;align-items:center;justify-content:space-between;z-index:100;transition:transform .3s ease,opacity .3s ease;position:fixed;top:26px;left:0;right:0;}
+#header.hidden{transform:translateY(-110%);opacity:0;pointer-events:none;}
+#hide-ui-btn{display:none;}
+#menu-tab{position:fixed;left:50%;transform:translateX(-50%);z-index:296;background:rgba(20,20,30,0.82);border:1px solid rgba(255,255,255,0.15);border-top:none;border-radius:0 0 12px 12px;padding:3px 18px 5px;color:rgba(255,255,255,0.55);font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;gap:5px;transition:top .3s ease;}
+#menu-tab svg{opacity:.5;transition:transform .3s;}
+#menu-tab.menus-hidden svg{transform:rotate(180deg);}
+#menu-tab.menus-hidden{color:rgba(255,255,255,0.8);}
+#header-btns{display:flex;align-items:center;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;padding-right:8px;}
+#header-btns::-webkit-scrollbar{display:none;}
+.logo{font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#3d7a3d;letter-spacing:1px;}
+.logo-sub{font-size:10px;color:#8a9a8a;margin-top:1px;}
+#tabs{display:flex;background:rgba(10,14,20,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1.5px solid rgba(255,255,255,0.08);z-index:99;position:fixed;left:0;right:0;transition:transform .3s ease,opacity .3s ease;}
+#tabs.hidden{transform:translateY(-110%);opacity:0;pointer-events:none;}
+.tab{flex:1;padding:11px;text-align:center;font-weight:600;font-size:13px;color:#8ec3b9;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;}
+.tab.active{color:#3d7a3d;border-bottom-color:#3d7a3d;}
+#stats{display:flex;background:rgba(10,14,20,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,0.07);position:fixed;left:0;right:0;z-index:98;transition:transform .3s ease,opacity .3s ease;}
+#stats.hidden{transform:translateY(-110%);opacity:0;pointer-events:none;}
+#lass-summary.hidden{transform:translateY(-200%);opacity:0;pointer-events:none;}
+.stat{flex:1;padding:8px 4px;text-align:center;border-right:1px solid rgba(255,255,255,0.06);}
+.stat-num{font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:#e0e8e0;}
+.stat-label{font-size:9px;color:#8ec3b9;margin-top:1px;}
+#map-view{position:fixed;inset:0;}
+#map{width:100%;height:100%;}
+#list-view{position:fixed;inset:0;overflow-y:auto;padding:12px;background:#0d1117;}
+#map-hint{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.97);color:#3d7a3d;padding:8px 18px;border-radius:30px;font-size:12px;font-weight:600;pointer-events:none;z-index:200;border:1px solid #e0e4d8;white-space:nowrap;transition:opacity .4s;box-shadow:0 2px 8px rgba(0,0,0,.1);}
+#list-view{overflow-y:auto;padding:12px;background:#0d1117;}
+.filters{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;}
+.filter-btn{padding:5px 12px;border-radius:20px;border:1.5px solid #d0d8c8;background:#ffffff;color:#8a9a8a;font-weight:600;font-size:11px;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.filter-btn.active{border-color:#3d7a3d;background:#e8f0e8;color:#3d7a3d;}
+.job-card{background:#ffffff;border-radius:14px;padding:13px 15px;border:1.5px solid #e0e4d8;cursor:pointer;margin-bottom:9px;position:relative;overflow:hidden;transition:border-color .15s;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.job-card:active{border-color:#3d7a3d;}
+.job-card.prio::before{content:'';position:absolute;left:0;top:0;width:4px;height:100%;background:#f59e0b;}
+.drag-card{cursor:grab;user-select:none;touch-action:none;}
+.job-addr{font-weight:700;font-size:14px;margin-bottom:3px;color:#1a2a1a;}
+.job-meta{font-size:11px;color:#8a9a8a;}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;}
+.job-num{font-size:11px;color:#c0cac0;font-family:'DM Mono',monospace;}
+.empty{text-align:center;padding:60px 20px;color:#c0cac0;}
+.empty-icon{font-size:44px;margin-bottom:10px;}
+.empty-text{font-weight:600;font-size:15px;margin-bottom:4px;color:#8a9a8a;}
+.empty-sub{font-size:12px;}
+#fab{position:fixed;bottom:22px;left:18px;width:54px;height:54px;border-radius:27px;background:#3d7a3d;color:#ffffff;border:none;font-size:26px;font-weight:700;cursor:pointer;z-index:300;box-shadow:0 4px 20px rgba(61,122,61,.35);display:flex;align-items:center;justify-content:center;transition:all .2s;}
+#fab:active{transform:scale(.95);}
+#fab.placing{background:#f59e0b;box-shadow:0 4px 20px rgba(245,158,11,.5);}
+#pin-mode-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.97);border:1.5px solid #f59e0b;border-radius:30px;padding:10px 18px;z-index:250;display:none;align-items:center;gap:12px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+#pin-mode-bar.visible{display:flex;}
+.pin-crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:240;display:none;font-size:36px;line-height:1;margin-top:-18px;}
+#confirm-pin-btn{background:#f59e0b;color:#ffffff;border:none;border-radius:20px;padding:7px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+#cancel-pin-btn{background:transparent;color:#8a9a8a;border:none;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-start;justify-content:center;}
+.sheet{background:#ffffff;border-radius:0 0 16px 16px;padding:14px 18px 28px;width:100%;max-width:520px;max-height:92dvh;overflow-y:auto;animation:slideDown .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+.sheet-handle{display:none;}
+.sheet-title{font-weight:700;font-size:17px;margin-bottom:18px;color:#1a2a1a;}
+.form-label{font-size:10px;color:#8a9a8a;font-weight:600;letter-spacing:.5px;margin-bottom:5px;text-transform:uppercase;}
+.form-input{width:100%;background:#f4f5f0;border:1.5px solid #e0e4d8;border-radius:10px;color:#1a2a1a;padding:10px 13px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;transition:border-color .15s;}
+.form-input:focus{border-color:#3d7a3d;}
+textarea.form-input{resize:vertical;min-height:70px;background:#f4f5f0 !important;color:#1a2a1a !important;}
+.type-btns{display:flex;gap:7px;margin-bottom:14px;}
+.type-btn{flex:1;padding:9px 4px;border-radius:10px;border:2px solid #2e4055;background:#0f1923;color:#8a9a8a;font-weight:600;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.type-btn.active{border-color:#3d7a3d;background:#e8f0e8;color:#3d7a3d;}
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.toggle{width:40px;height:22px;border-radius:11px;background:#2e4055;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.toggle.on{background:#f59e0b;}
+.toggle-thumb{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;}
+.toggle.on .toggle-thumb{left:21px;}
+.btn-primary{width:100%;padding:13px;border-radius:12px;border:none;background:#7fc67e;color:#0f1923;font-weight:700;font-size:15px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s;}
+.btn-primary:disabled{background:#2e4055;color:#3d5566;cursor:default;}
+.btn-secondary{background:#f4f5f0;color:#1a2a1a;border:1.5px solid #d0d8c8;border-radius:10px;padding:10px 16px;font-weight:600;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-danger{background:#7f1d1d;color:#fca5a5;border:none;border-radius:10px;padding:10px 16px;font-weight:600;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.status-btns{display:flex;gap:7px;margin-bottom:18px;}
+.status-btn{flex:1;padding:8px 4px;border-radius:10px;border:2px solid #2e4055;background:#0f1923;font-weight:600;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.info-card{background:#f4f5f0;border-radius:10px;padding:10px 13px;}
+.info-card-label{font-size:9px;color:#8a9a8a;margin-bottom:3px;letter-spacing:.5px;}
+.info-card-val{font-weight:600;font-size:13px;}
+.note-box{background:#e8f0ff;border-radius:10px;padding:11px 13px;margin-bottom:16px;border-left:3px solid #3355cc;color:#1a2a1a;}
+.note-label{font-size:9px;color:#8a9a8a;margin-bottom:4px;}
+.note-text{font-size:13px;}
+.action-row{display:flex;gap:8px;}
+.prio-badge{background:#7c3a00;color:#fbbf24;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;display:inline-block;margin-bottom:6px;}
+.geocode-status{font-size:11px;color:#4a9eff;margin-bottom:8px;}
+#addr-suggestions{background:#0f1923;border:1px solid #2e4055;border-radius:10px;margin-top:-10px;margin-bottom:14px;overflow:hidden;display:none;}
+.addr-sug-item{padding:10px 13px;font-size:13px;cursor:pointer;border-bottom:1px solid #2e4055;}
+.addr-sug-item:last-child{border-bottom:none;}
+.addr-sug-item:active{background:#1a2b38;}
+.img-preview{width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin-bottom:14px;display:none;}
+.img-thumb{width:100%;height:160px;object-fit:cover;border-radius:10px;margin-bottom:12px;}
+#map-filter-bar{position:absolute;bottom:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:6px;}
+.spinner{width:40px;height:40px;border:3px solid #2e4055;border-top-color:#3d7a3d;border-radius:50%;animation:spin .8s linear infinite;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:#2e4055;border-radius:4px;}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<!-- Demo banner -->
+<div id="demo-banner" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(249,115,22,0.9);color:#fff;text-align:center;font-size:11px;font-weight:700;padding:4px;font-family:'DM Sans',sans-serif;backdrop-filter:blur(4px);">
+  DEMO – Data sparas bara i webbläsaren och nollställs vid omladdning
+  <span onclick="this.parentElement.style.display='none'" style="margin-left:12px;cursor:pointer;opacity:0.7;">✕</span>
+</div>
+
+<!-- Header -->
+<div id="header">
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMwAAAA9CAYAAADh7IZOAAABJmlDQ1BrQ0dDb2xvclNwYWNlQWRvYmVSR0IxOTk4AAAokWNgYFJILCjIYRJgYMjNKykKcndSiIiMUmB/xcDFwMEgAoT6icnFBY4BAT4MQACjUcG3awyMIPqyLsgsTHm8gCsltTgZSP8B4uzkgqISBgbGDCBbubykAMTuAbJFkrLB7AUgdhHQgUD2FhA7HcI+AVYDYd8BqwkJcgayPwDZfElgNhPILr50CFsAxIbaCwKCjin5SakKIN9rGFpaWmiS6AeCoCS1ogREO+cXVBZlpmeUKDgCQypVwTMvWU9HwcjAyIyBARTuENWfA8HhySh2BiGGAAixORIMDP5LGRhY/iDETHoZGBboMDDwT0WIqRkyMAjoMzDsm5NcWlQGNYaRyZiBgRAfAEUKSmvqP18qAAAAOGVYSWZNTQAqAAAACAABh2kABAAAAAEAAAAaAAAAAAACoAIABAAAAAEAAADMoAMABAAAAAEAAAA9AAAAAEtP500AABaZSURBVHgB7VwHeFVVtl7plSSkEQKE0KWGJjKCgCBNEZQnRR8KDIqAgjo8HRzHT0TU4aFjwwKD8xjxDSCIIEoRKeLQBKQOJEBCCAFCSO89b//7ss/d59xzk3tJMfneXt93v7PL2uWss9feq+3rQkSV7KdAUUBRwAEKuDqAo1AUBRQFblFAMYxaCooCTlBAMYwTxFKoigKKYdQaUBRwggKKYZwglkJVFFAMo9aAooATFFAM4wSxFKqigGIYtQYUBZyggGIYJ4ilUBUFFMOoNaAo4AQFFMM4QSyFqiigGEatAUUBJyigGMYJYilURQHFMGoNKAo4QQF3J3DrBdXN3YXKy+zfOLijWyj1vLM5tYwKIBcXF8rNKaaLcRn0y/5kyskqrpc5qkH+/1KgwTDM3YNb0fzXBlBQU2+KPZNGf//4Vzp26Br/Mv5NPOnhRzvT/Q93pGbN/U2/VnlZBe3bdZn+8dlxSrqUbYqjChUFakoBF9aB/e28pr072N7b25024JpMvn4eWosKSsMszLIka6CfQOwaOoYOz9JMqbhUKTqW/lIMq2JSRXJQ3YUBRQFCiJAhTDAKCsBhS8u0IrgMhxAAAAAElFTkSuQmCC" style="height:28px;width:auto;" alt="Arboteket"/>
+    <div class="logo-sub" style="font-size:10px;color:#8ec3b9;margin-top:2px;letter-spacing:1px;font-weight:600;">KÖRPLAN</div>
+  </div>
+  <div id="header-btns">
+    <div style="font-size:11px;color:#8ec3b9;display:flex;align-items:center;flex-shrink:0;">
+      <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(249,115,22,0.2);color:#fb923c;border:1px solid rgba(249,115,22,0.3);">DEMO</span>
+    </div>
+    <button onclick="goToMyLocation()" id="location-btn" style="flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#5cb85c;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">📡 Min position</button>
+    <button onclick="toggleMapType()" id="maptype-btn" style="flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#e0e8e0;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🛰️ Satellit</button>
+    <button onclick="toggleBKLayer()" id="bk-btn" style="flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#e0e8e0;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🛣️ BK</button>
+    <button onclick="showMapCenter()" style="flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#e0e8e0;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">📍 Centrera</button>
+    <button onclick="toggleUI()" title="Dölj meny" style="flex-shrink:0;font-size:13px;padding:3px 8px;border-radius:20px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);cursor:pointer;line-height:1;font-family:'DM Sans',sans-serif;">▾</button>
+  </div>
+</div>
+<button id="hide-ui-btn" onclick="toggleUI()"></button>
+<!-- Pull-up tab (visas när menyn är gömd) -->
+<div id="menu-tab" onclick="toggleUI()">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+  Visa meny
+</div>
+
+<!-- BK-legend -->
+<!-- Zoom indicator -->
+<div id="zoom-indicator" onclick="if(map&&map.getZoom()<12)map.setZoom(12)" style="position:fixed;bottom:145px;right:12px;z-index:200;padding:4px 10px;border-radius:20px;border:1px solid rgba(249,115,22,0.4);background:rgba(249,115,22,0.18);color:#fdba74;font-size:11px;font-family:'DM Mono',monospace;font-weight:600;cursor:pointer;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);transition:background .3s,color .3s,border-color .3s;">Zoom 11</div>
+
+<div id="bk-legend" style="display:none;position:fixed;bottom:80px;left:12px;z-index:10;background:rgba(20,20,30,0.88);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:#f0f0f0;pointer-events:none;">
+  <div style="font-weight:700;margin-bottom:7px;font-size:11px;letter-spacing:.5px;opacity:.7;text-transform:uppercase;">Bärighetsklass</div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:24px;height:4px;border-radius:2px;background:#22c55e;"></span>BK 1 – 64 ton</div>
+    <div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:24px;height:4px;border-radius:2px;background:#3b82f6;"></span>BK 4 – 74 ton</div>
+    <div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:24px;height:4px;border-radius:2px;background:#eab308;"></span>BK 2 – 51,4 ton</div>
+    <div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:24px;height:4px;border-radius:2px;background:#f97316;"></span>BK 3 – 37,5 ton</div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div id="tabs">
+  <div class="tab active" id="tab-map" onclick="switchTab('map')">🗺️ Karta</div>
+  <div class="tab" id="tab-list" onclick="switchTab('list')">📋 Lista (<span id="list-count">0</span>)</div>
+</div>
+
+<!-- Lass summary -->
+<div id="lass-summary" style="display:flex;gap:5px;padding:6px 10px;background:rgba(10,14,20,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.07);overflow-x:auto;align-items:center;position:fixed;left:0;right:0;z-index:97;transition:transform .3s ease,opacity .3s ease;">
+  <div id="lf-lastbil" onclick="setLassFilter('rishög-lastbil')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;white-space:nowrap;font-size:11px;font-weight:600;color:#e0e8e0;cursor:pointer;transition:all .15s;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5cb85c" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    <span id="s-lastbil">0</span> lastbil
+  </div>
+  <div id="s-slap-wrap" onclick="setLassFilter('rishög-lastbil')" style="display:none;align-items:center;gap:4px;background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:3px 10px;white-space:nowrap;font-size:11px;font-weight:600;color:#fbbf24;cursor:pointer;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    <span id="s-slap">0</span> släp
+  </div>
+  <div id="lf-alstor" onclick="setLassFilter('rishög-alstor')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;white-space:nowrap;font-size:11px;font-weight:600;color:#e0e8e0;cursor:pointer;transition:all .15s;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5cb85c" stroke-width="2"><path d="M3 3h4v4H3z"/><path d="M3 10h4v4H3z"/><path d="M3 17h4v4H3z"/><path d="M10 3h11v4H10z"/><path d="M10 10h11v4H10z"/><path d="M10 17h11v4H10z"/></svg>
+    <span id="s-alstor">0</span> alstor
+  </div>
+  <div id="lf-stubbe" onclick="setLassFilter('stubbe')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;white-space:nowrap;font-size:11px;font-weight:600;color:#e0e8e0;cursor:pointer;transition:all .15s;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8ec3b9" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    <span id="s-stubbar">0</span> stubbar
+  </div>
+  <div id="lf-kb" onclick="setLassFilter('kundbesök')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;white-space:nowrap;font-size:11px;font-weight:600;color:#e0e8e0;cursor:pointer;transition:all .15s;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8ec3b9" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span id="s-kundbesok">0</span> KB
+  </div>
+</div>
+
+<!-- Map View -->
+<div id="map-view">
+  <div id="map"></div>
+  <div id="map-hint">Tryck på kartan eller + för att lägga till en punkt</div>
+  <div id="pin-mode-bar">
+    <span style="color:#f59e0b;font-size:13px;font-weight:600;">📍 Flytta kartan, placera nålen</span>
+    <button id="confirm-pin-btn" onclick="confirmPinPlacement()">✓ Placera här</button>
+    <button id="cancel-pin-btn" onclick="cancelPinMode()">✕</button>
+  </div>
+  <div class="pin-crosshair" id="pin-crosshair">📍</div>
+</div>
+
+<!-- List View -->
+<div id="list-view" style="display:none;">
+  <div class="filters" id="filters">
+    <button class="filter-btn active" onclick="setStatusFilter('alla',this)">Alla status</button>
+    <button class="filter-btn" onclick="setStatusFilter('väntar',this)">Väntar</button>
+    <button class="filter-btn" onclick="setStatusFilter('påväg',this)">På väg</button>
+    <button class="filter-btn" onclick="setStatusFilter('klar',this)">Klar</button>
+    <div style="width:1px;background:#d0d8c8;margin:0 2px;flex-shrink:0;"></div>
+    <button class="filter-btn" id="manual-btn" onclick="toggleManualMode(this)">⇅ Manuell</button>
+  </div>
+  <div id="manual-banner" style="display:none;background:#e8f5e8;border:1px solid #3d7a3d44;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#3d7a3d;font-weight:600;">⇅ Manuell ordning aktiv – dra för att sortera</div>
+  <div id="job-list"></div>
+</div>
+
+<!-- FAB -->
+<button id="fab" onclick="startPinMode()">+</button>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay" style="display:none;" onclick="closeOverlayClick(event)"></div>
+
+<!-- Add/Edit sheet -->
+<div class="sheet" id="add-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheet-title">Ny punkt</div>
+  <div class="form-label">ADRESS *</div>
+  <input class="form-input" id="f-addr" placeholder="Sök eller skriv adress..." oninput="onAddrInput()" autocomplete="off"/>
+  <div id="addr-suggestions"></div>
+  <div class="geocode-status" id="geocode-status" style="display:none;"></div>
+  <div class="form-label">KUNDNAMN / BESTÄLLARE</div>
+  <input class="form-input" id="f-kund" placeholder="T.ex. Svensson AB"/>
+  <div class="form-label">ORDERNUMMER</div>
+  <input class="form-input" id="f-order" placeholder="T.ex. AO-2024-001"/>
+  <div class="form-label">TYP AV UPPDRAG</div>
+  <div class="type-btns">
+    <button class="type-btn active" id="t-rishög" onclick="setType('rishög')">🌿 Rishög</button>
+    <button class="type-btn" id="t-stubbe" onclick="setType('stubbe')">🪵 Stubbe</button>
+    <button class="type-btn" id="t-båda" onclick="setType('båda')">🌿🪵 Båda</button>
+    <button class="type-btn" id="t-kundbesök" onclick="setType('kundbesök')">🤝 Kundbesök</button>
+  </div>
+  <div id="alstor-row" style="display:none;margin-top:-8px;margin-bottom:14px;">
+    <div class="form-label">ALSTOR KRÄVS?</div>
+    <div style="display:flex;gap:8px;">
+      <button class="type-btn" id="alstor-ja" onclick="setAlstor(true)" style="flex:none;padding:7px 16px;">🚜 Ja, alstor först</button>
+      <button class="type-btn active" id="alstor-nej" onclick="setAlstor(false)" style="flex:none;padding:7px 16px;">🚛 Nej, direkt med lastbil</button>
+    </div>
+  </div>
+  <div id="lass-row" style="display:none;margin-bottom:14px;">
+    <div class="form-label">ANTAL LASS</div>
+    <select class="form-input" id="f-lass" style="background:#f4f5f0;color:#1a2a1a;border:1.5px solid #e0e4d8;border-radius:10px;padding:10px 14px;font-size:14px;font-family:'DM Sans',sans-serif;">
+      <option value="">Välj antal lass...</option>
+      <option value="0.5">0.5 lass</option>
+      <option value="1">1 lass</option>
+      <option value="1.5">1.5 lass</option>
+      <option value="2">2 lass</option>
+      <option value="2.5">2.5 lass</option>
+      <option value="3">3 lass</option>
+      <option value="3.5">3.5 lass</option>
+      <option value="4">4 lass</option>
+      <option value="4+">Mer än 4 lass</option>
+    </select>
+    <div id="slap-row" style="display:none;margin-top:10px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="f-slap" style="width:18px;height:18px;accent-color:#3d7a3d;cursor:pointer;"/>
+        <span style="font-size:13px;color:#1a2a1a;">🚛 Mycket ris – kör med lastbilssläp om möjligt</span>
+      </label>
+    </div>
+  </div>
+  <div class="form-label">NOTERING</div>
+  <textarea class="form-input" id="f-note" placeholder="Portkod, instruktioner..."></textarea>
+  <div class="toggle-row">
+    <div class="toggle" id="prio-toggle" onclick="togglePrio()"><div class="toggle-thumb"></div></div>
+    <span id="prio-label" style="font-size:13px;color:#8a9a8a;">Hög prioritet</span>
+  </div>
+  <div class="form-label">BILD (valfritt)</div>
+  <img id="img-preview" class="img-preview" src="" alt="Förhandsgranskning"/>
+  <div id="img-upload-box" style="display:none;"><!-- Upload disabled in demo --></div>
+  <button class="btn-primary" id="save-btn" onclick="saveJob()">Lägg till punkt</button>
+  <button style="width:100%;margin-top:8px;padding:12px;border-radius:10px;border:1.5px solid #d0d8c8;background:#fff;color:#8a9a8a;font-weight:600;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="closeSheets()">Avbryt</button>
+</div>
+
+<!-- Detail sheet -->
+<div class="sheet" id="detail-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;">
+  <div class="sheet-handle"></div>
+  <div id="detail-content"></div>
+</div>
+
+<!-- Confirm delete -->
+<div class="sheet" id="confirm-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:600;text-align:center;">
+  <div class="sheet-handle"></div>
+  <div style="font-size:36px;margin-bottom:8px;">🗑️</div>
+  <div style="font-weight:700;font-size:16px;margin-bottom:6px;">Ta bort punkt?</div>
+  <div style="color:#8a9a8a;font-size:13px;margin-bottom:20px;">Detta går inte att ångra.</div>
+  <div style="display:flex;gap:10px;justify-content:center;">
+    <button class="btn-secondary" onclick="closeSheets()">Avbryt</button>
+    <button class="btn-danger" onclick="confirmDelete()">Ta bort</button>
+  </div>
+</div>
+
+<script>
+const MAPS_KEY = 'AIzaSyAB4x7U8tj_zBqG7sG97IitVxBDXlRRTvQ';
+let map, geocoder, autocompleteService, placesService;
+
+// ---- DEMO DATA ----
+window.jobs = [
+  {id:"demo1", typ:"rishög",    adress:"Storgatan 14, Linköping",       lat:58.4108, lng:15.6214, status:"väntar",  lass:"2",   alstor:false, prioritet:false, notering:"Ris bakom huset",                skapad:"2026-10-05", slap:false, bildUrl:''},
+  {id:"demo2", typ:"stubbe",    adress:"Ekvägen 3, Linköping",           lat:58.4230, lng:15.6350, status:"väntar",  lass:"",    alstor:false, prioritet:true,  notering:"Stor ek, boka specialfordon",    skapad:"2026-10-01", slap:false, bildUrl:''},
+  {id:"demo3", typ:"rishög",    adress:"Blomstervägen 7, Mjölby",        lat:58.3270, lng:15.1240, status:"påväg",   lass:"1.5", alstor:true,  prioritet:false, notering:"",                               skapad:"2026-10-06", slap:false, bildUrl:''},
+  {id:"demo4", typ:"kundbesök", adress:"Drottninggatan 22, Linköping",   lat:58.4050, lng:15.6180, status:"väntar",  lass:"",    alstor:false, prioritet:false, notering:"Offertbesök, frågar om 3 träd", skapad:"2026-10-07", slap:false, bildUrl:''},
+  {id:"demo5", typ:"båda",      adress:"Skogsgatan 9, Linköping",        lat:58.4320, lng:15.5980, status:"klar",    lass:"3",   alstor:false, prioritet:false, notering:"",                               skapad:"2026-09-30", slap:false, bildUrl:''},
+  {id:"demo6", typ:"rishög",    adress:"Tallvägen 2, Norrköping",        lat:58.5870, lng:16.1920, status:"väntar",  lass:"2.5", alstor:false, prioritet:true,  notering:"Grind mot gatan, ring 070-000 00 00", skapad:"2026-10-04", slap:false, bildUrl:''},
+  {id:"demo7", typ:"stubbe",    adress:"Parkgatan 5, Motala",            lat:58.5370, lng:15.0360, status:"väntar",  lass:"",    alstor:false, prioritet:false, notering:"",                               skapad:"2026-10-03", slap:false, bildUrl:''},
+  {id:"demo8", typ:"kundbesök", adress:"Kyrkogatan 1, Mjölby",           lat:58.3210, lng:15.1280, status:"påväg",   lass:"",    alstor:false, prioritet:false, notering:"Återbesök efter storm",          skapad:"2026-10-07", slap:false, bildUrl:''},
+];
+
+let markers = {};
+let currentTab = 'map';
+let filterType = 'alla';
+let filterStatus = 'alla';
+let editingImageUrl = null;
+let editingId = null;
+let deletingId = null;
+let currentType = 'rishög';
+let isPrio = false;
+let needsAlstor = false;
+let suggestTimer = null;
+let pendingCoords = null;
+let manualMode = false;
+let manualOrder = [];
+let dragSrcIndex = null;
+
+const STATUS = {
+  väntar: {label:'Väntar', color:'#d97706', bg:'#fff8e8'},
+  påväg:  {label:'På väg', color:'#2563eb', bg:'#eff6ff'},
+  klar:   {label:'Klar',   color:'#3d7a3d', bg:'#e8f0e8'},
+};
+const TYPE_SVG = {
+  rishög:    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  stubbe:    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="14" width="16" height="6" rx="1"/><path d="M8 14V8a4 4 0 0 1 8 0v6"/></svg>',
+  båda:      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="9" r="3"/><rect x="3" y="16" width="10" height="5" rx="1"/><circle cx="17" cy="9" r="3"/><rect x="12" y="16" width="10" height="5" rx="1"/></svg>',
+  kundbesök: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+};
+const TYPE_COLOR = {rishög:'#3d7a3d', stubbe:'#8B4513', båda:'#e67e22', kundbesök:'#9b59b6'};
+const TYPE_LABEL = {rishög:'Rishög', stubbe:'Stubbe', båda:'Båda', kundbesök:'Kundbesök'};
+const TYPE = {
+  rishög:    {label:'Rishög',    icon:'🌿', pin:'#27ae60'},
+  stubbe:    {label:'Stubbe',    icon:'🪵', pin:'#8B4513'},
+  båda:      {label:'Båda',      icon:'🌿🪵', pin:'#e67e22'},
+  kundbesök: {label:'Kundbesök', icon:'🤝', pin:'#9b59b6'},
+};
+
+// ---- IN-MEMORY CRUD ----
+function dbAdd(data){
+  const id = 'job_' + Date.now();
+  window.jobs.push({...data, id});
+  updateStats(); renderList(); syncMarkers();
+}
+function dbUpdate(id, data){
+  const idx = window.jobs.findIndex(j=>j.id===id);
+  if(idx>=0) window.jobs[idx] = {...window.jobs[idx], ...data};
+  updateStats(); renderList(); syncMarkers();
+}
+function dbRemove(id){
+  window.jobs = window.jobs.filter(j=>j.id!==id);
+  updateStats(); renderList(); syncMarkers();
+}
+
+// ---- MAP ----
+function initMap(){
+  positionOverlays();
+  window.addEventListener('resize', positionOverlays);
+  map = new google.maps.Map(document.getElementById('map'),{
+    center:{lat:58.41,lng:15.62}, zoom:11,
+    disableDefaultUI:true, zoomControl:true,
+    styles: DARK_STYLE,
+  });
+  geocoder = new google.maps.Geocoder();
+  autocompleteService = new google.maps.places.AutocompleteService();
+  placesService = new google.maps.places.PlacesService(map);
+
+  map.addListener('zoom_changed', updateZoomIndicator);
+  setTimeout(updateZoomIndicator, 500);
+
+  map.addListener('dblclick', function(e){
+    e.stop();
+    map.setZoom(map.getZoom() + 2);
+    map.panTo(e.latLng);
+  });
+  map.addListener('click', e => {
+    if(pinMode){
+      const coords = {lat: e.latLng.lat(), lng: e.latLng.lng()};
+      cancelPinMode();
+      geocoder.geocode({location: coords}, (res, status) => {
+        let addr = '';
+        if(status==='OK' && res[0]) addr = res[0].formatted_address;
+        pendingCoords = coords;
+        openAddModal(null, coords, addr);
+      });
+    } else {
+      pendingCoords = {lat: e.latLng.lat(), lng: e.latLng.lng()};
+      geocoder.geocode({location: pendingCoords}, (res, status) => {
+        let addr = '';
+        if(status==='OK' && res[0]) addr = res[0].formatted_address;
+        openAddModal(null, pendingCoords, addr);
+      });
+    }
+  });
+
+  setTimeout(()=>{ const h=document.getElementById('map-hint'); if(h){h.style.opacity='0';} },4000);
+  setTimeout(()=>{ const h=document.getElementById('map-hint'); if(h){h.style.display='none';} },4500);
+
+  google.maps.event.addListenerOnce(map,'tilesloaded',()=>{
+    updateStats();
+    renderList();
+    syncMarkers();
+  });
+
+  window.bkPolylines = [];
+  window.bkLayerVisible = false;
+  window.mapDarkMode = true;
+}
+
+function pinSvg(color, icon, prio){
+  const ring = prio ? `<circle cx="24" cy="24" r="22" fill="none" stroke="#f59e0b" stroke-width="3"/>` : '';
+  return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="56" viewBox="0 0 48 56">
+    <ellipse cx="24" cy="52" rx="8" ry="3" fill="rgba(0,0,0,0.3)"/>
+    ${ring}
+    <circle cx="24" cy="22" r="20" fill="${color}" stroke="#fff" stroke-width="2.5"/>
+    <text x="24" y="29" text-anchor="middle" font-size="18">${icon}</text>
+    <polygon points="24,44 16,34 32,34" fill="${color}"/>
+  </svg>`)}`;
+}
+
+function addMarker(job){
+  if(!map) return;
+  if(markers[job.id]) markers[job.id].setMap(null);
+  const t = TYPE[job.typ] || TYPE.rishög;
+  const m = new google.maps.Marker({
+    position:{lat:job.lat,lng:job.lng}, map,
+    icon:{ url:pinSvg(t.pin,t.icon,job.prioritet), scaledSize:new google.maps.Size(48,56), anchor:new google.maps.Point(24,52) },
+    title: job.adress,
+  });
+  m.addListener('click', ()=>openDetail(job.id));
+  markers[job.id] = m;
+}
+
+function setMapFilter(val, el){
+  mapFilterType = val;
+  document.querySelectorAll('#map-filter-bar .filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  syncMarkers();
+}
+
+function syncMarkers(){
+  const ids = window.jobs.map(j=>j.id);
+  Object.keys(markers).forEach(id=>{ if(!ids.includes(id)){ markers[id].setMap(null); delete markers[id]; } });
+  window.jobs.forEach(j=>{
+    let visible = false;
+    if(filterType==='alla') visible=true;
+    else if(filterType==='rishög-lastbil') visible=(j.typ==='rishög'||j.typ==='båda')&&!j.alstor;
+    else if(filterType==='rishög-alstor') visible=(j.typ==='rishög'||j.typ==='båda')&&j.alstor;
+    else visible=j.typ===filterType;
+    if(visible){
+      addMarker(j);
+    } else {
+      if(markers[j.id]){ markers[j.id].setMap(null); delete markers[j.id]; }
+    }
+  });
+}
+
+let pinMode = false;
+
+function startPinMode(){
+  if(currentTab !== 'map') switchTab('map');
+  pinMode = true;
+  document.getElementById('fab').classList.add('placing');
+  document.getElementById('fab').textContent = '📍';
+  document.getElementById('pin-mode-bar').classList.add('visible');
+  document.getElementById('pin-crosshair').style.display = 'block';
+  map.setOptions({draggableCursor: 'crosshair'});
+}
+
+function cancelPinMode(){
+  pinMode = false;
+  document.getElementById('fab').classList.remove('placing');
+  document.getElementById('fab').textContent = '+';
+  document.getElementById('pin-mode-bar').classList.remove('visible');
+  document.getElementById('pin-crosshair').style.display = 'none';
+  map.setOptions({draggableCursor: null});
+}
+
+function confirmPinPlacement(){
+  const center = map.getCenter();
+  const coords = {lat: center.lat(), lng: center.lng()};
+  cancelPinMode();
+  geocoder.geocode({location: coords}, (res, status) => {
+    let addr = '';
+    if(status==='OK' && res[0]) addr = res[0].formatted_address;
+    pendingCoords = coords;
+    openAddModal(null, coords, addr);
+  });
+}
+
+function resetImageUI(){
+  editingImageUrl = null;
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('img-preview').src='';
+}
+
+let myLocationMarker = null;
+let myLocationCircle = null;
+
+function goToMyLocation(){
+  if(!navigator.geolocation){ alert('Din webbläsare stöder inte GPS.'); return; }
+  const btn = document.getElementById('location-btn');
+  btn.textContent = '⏳ Hämtar...';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const accuracy = pos.coords.accuracy;
+      if(myLocationMarker) myLocationMarker.setMap(null);
+      if(myLocationCircle) myLocationCircle.setMap(null);
+      myLocationMarker = new google.maps.Marker({
+        position: {lat, lng}, map,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#4a9eff', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2.5 },
+        title: 'Din position', zIndex: 999,
+      });
+      myLocationCircle = new google.maps.Circle({
+        map, center: {lat, lng}, radius: accuracy,
+        fillColor: '#4a9eff', fillOpacity: 0.12,
+        strokeColor: '#4a9eff', strokeOpacity: 0.4, strokeWeight: 1,
+      });
+      map.panTo({lat, lng});
+      map.setZoom(15);
+      btn.textContent = '📡 Position';
+      btn.disabled = false;
+    },
+    (err) => {
+      alert('Kunde inte hämta position. Kontrollera att du tillåtit platsåtkomst.');
+      btn.textContent = '📡 Position';
+      btn.disabled = false;
+    },
+    {enableHighAccuracy: true, timeout: 10000}
+  );
+}
+
+function toggleMapType(){
+  if(!map) return;
+  const current = map.getMapTypeId();
+  if(current === 'roadmap'){
+    map.setMapTypeId('satellite');
+    document.getElementById('maptype-btn').textContent = '🗺️ Karta';
+  } else {
+    map.setMapTypeId('roadmap');
+    document.getElementById('maptype-btn').textContent = '🛰️ Satellit';
+  }
+}
+
+const DARK_STYLE = [
+  {elementType:'geometry',stylers:[{color:'#1a1a2e'}]},
+  {elementType:'labels.text.fill',stylers:[{color:'#8ec3b9'}]},
+  {elementType:'labels.text.stroke',stylers:[{color:'#1a1a2e'}]},
+  {featureType:'administrative',elementType:'geometry',stylers:[{color:'#2d2d44'}]},
+  {featureType:'administrative.country',elementType:'labels.text.fill',stylers:[{color:'#9da5b3'}]},
+  {featureType:'landscape',stylers:[{color:'#16213e'}]},
+  {featureType:'poi',stylers:[{color:'#283655'}]},
+  {featureType:'poi.park',elementType:'geometry',stylers:[{color:'#1b3a2a'}]},
+  {featureType:'poi.park',elementType:'labels.text.fill',stylers:[{color:'#4b7a5c'}]},
+  {featureType:'road',elementType:'geometry',stylers:[{color:'#2d3561'}]},
+  {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#212a49'}]},
+  {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#9ca5b3'}]},
+  {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#3a4a7c'}]},
+  {featureType:'road.highway',elementType:'geometry.stroke',stylers:[{color:'#1f2552'}]},
+  {featureType:'road.highway',elementType:'labels.text.fill',stylers:[{color:'#f3d19c'}]},
+  {featureType:'transit',elementType:'geometry',stylers:[{color:'#2f3948'}]},
+  {featureType:'water',elementType:'geometry',stylers:[{color:'#0e1626'}]},
+  {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#4e6d70'}]},
+];
+
+function toggleUI(){
+  const header = document.getElementById('header');
+  const tabs = document.getElementById('tabs');
+  const stats = document.getElementById('lass-summary');
+  const menuTab = document.getElementById('menu-tab');
+  const hidden = header.classList.toggle('hidden');
+  if(tabs) tabs.classList.toggle('hidden', hidden);
+  if(stats) stats.classList.toggle('hidden', hidden);
+  if(menuTab) menuTab.classList.toggle('menus-hidden', hidden);
+  positionOverlays();
+}
+
+function updateZoomIndicator(){
+  if(!map) return;
+  const z = map.getZoom();
+  const el = document.getElementById('zoom-indicator');
+  if(!el) return;
+  const ready = z >= 12;
+  el.textContent = 'Zoom ' + z;
+  el.style.background = ready ? 'rgba(34,197,94,0.18)' : 'rgba(249,115,22,0.18)';
+  el.style.borderColor = ready ? 'rgba(34,197,94,0.4)' : 'rgba(249,115,22,0.4)';
+  el.style.color = ready ? '#86efac' : '#fdba74';
+  el.title = ready ? 'BK-lagret kan aktiveras' : 'Zooma in till minst 12 för att aktivera BK';
+}
+
+function positionOverlays(){
+  const banner = document.getElementById('demo-banner');
+  const bannerH = (banner && banner.style.display !== 'none') ? banner.offsetHeight : 0;
+  const header = document.getElementById('header');
+  const tabs = document.getElementById('tabs');
+  const lassSummary = document.getElementById('lass-summary');
+  const menuTab = document.getElementById('menu-tab');
+  if(!header) return;
+  const menusHidden = header.classList.contains('hidden');
+  // Header top is fixed at bannerH via CSS (top:26px), but adjust dynamically if banner hidden
+  header.style.top = bannerH + 'px';
+  const hh = menusHidden ? 0 : (bannerH + header.offsetHeight);
+  if(tabs){ tabs.style.top = (menusHidden ? bannerH : hh) + 'px'; }
+  const th = (tabs && !menusHidden) ? tabs.offsetHeight : 0;
+  if(lassSummary){ lassSummary.style.top = (menusHidden ? bannerH : hh+th) + 'px'; }
+  const lh = (lassSummary && !menusHidden) ? lassSummary.offsetHeight : 0;
+  if(menuTab){ menuTab.style.top = (menusHidden ? bannerH : hh+th+lh) + 'px'; }
+}
+
+const BK_COLOR = { 'BK 1':'#22c55e', 'BK 2':'#eab308', 'BK 3':'#f97316', 'BK 4':'#3b82f6' };
+
+function clearBKPolylines(){
+  (window.bkPolylines||[]).forEach(p=>p.setMap(null));
+  window.bkPolylines = [];
+}
+
+async function toggleBKLayer(){
+  if(!map) return;
+  const btn = document.getElementById('bk-btn');
+  if(window.bkLayerVisible){
+    clearBKPolylines();
+    window.bkLayerVisible = false;
+    btn.style.background = '';
+    btn.style.color = '#e0e8e0';
+    btn.textContent = '🛣️ BK';
+    document.getElementById('bk-legend').style.display = 'none';
+    return;
+  }
+  if(map.getZoom() < 12){
+    alert('Zooma in mer innan du hämtar BK-klasser (zoom minst 12).');
+    return;
+  }
+  btn.textContent = '⏳ Hämtar…';
+  btn.disabled = true;
+  try {
+    const b = map.getBounds();
+    if(!b){ btn.textContent='🛣️ BK'; btn.disabled=false; return; }
+    const s = b.getSouthWest(), n = b.getNorthEast();
+    const clat = (s.lat()+n.lat())/2;
+    const clng = (s.lng()+n.lng())/2;
+    const resp = await fetch(
+      `https://europe-west1-branchandastumps.cloudfunctions.net/bkKlass?mode=map&lat=${clat}&lng=${clng}&radius=2000`
+    );
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    clearBKPolylines();
+    (data.segments||[]).forEach(seg=>{
+      const color = BK_COLOR[seg.bk] || '#888';
+      const path = parseWKTLineString(seg.wkt);
+      if(!path.length) return;
+      const pl = new google.maps.Polyline({
+        path, map, strokeColor: color, strokeWeight: 4, strokeOpacity: 0.85, zIndex: 10
+      });
+      pl.addListener('click', ev=>{
+        new google.maps.InfoWindow({
+          content:`<b>${seg.bk}</b>${seg.bkExtra?' – '+seg.bkExtra:''}`,
+          position: ev.latLng
+        }).open(map);
+      });
+      window.bkPolylines.push(pl);
+    });
+    window.bkLayerVisible = true;
+    btn.style.background = '#3d7a3d';
+    btn.style.color = '#fff';
+    btn.textContent = '🛣️ BK ✓';
+    document.getElementById('bk-legend').style.display = 'block';
+    if(!(data.segments||[]).length){
+      alert('Inga BK-klassade vägar hittades i det här området (5 km radie).');
+      window.bkLayerVisible = false;
+      btn.style.background=''; btn.style.color='#e0e8e0'; btn.textContent='🛣️ BK';
+      document.getElementById('bk-legend').style.display = 'none';
+    }
+  } catch(e){
+    console.error('BK-karta fel:', e);
+    alert('Kunde inte hämta BK-klasser: '+e.message);
+    btn.textContent = '🛣️ BK';
+    btn.style.background=''; btn.style.color='#e0e8e0';
+    document.getElementById('bk-legend').style.display = 'none';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function parseWKTLineString(wkt){
+  if(!wkt) return [];
+  const coords = [];
+  const matches = wkt.match(/-?\d+\.?\d*\s+-?\d+\.?\d*/g);
+  if(!matches) return [];
+  matches.forEach(pair=>{
+    const [x,y] = pair.trim().split(/\s+/).map(Number);
+    coords.push({lat:y, lng:x});
+  });
+  return coords;
+}
+
+function showMapCenter(){
+  if(!map||window.jobs.length===0) return;
+  const bounds = new google.maps.LatLngBounds();
+  window.jobs.forEach(j=>bounds.extend({lat:j.lat,lng:j.lng}));
+  map.fitBounds(bounds,{top:60,bottom:60,left:40,right:40});
+}
+
+// ---- TABS ----
+function switchTab(tab){
+  currentTab=tab;
+  document.getElementById('tab-map').classList.toggle('active',tab==='map');
+  document.getElementById('tab-list').classList.toggle('active',tab==='list');
+  document.getElementById('map-view').style.display=tab==='map'?'block':'none';
+  const lv=document.getElementById('list-view');
+  lv.style.display=tab==='list'?'block':'none';
+  if(tab==='list'){
+    const h=document.getElementById('header');
+    const t=document.getElementById('tabs');
+    const s=document.getElementById('lass-summary');
+    const banner=document.getElementById('demo-banner');
+    const bh=(banner&&banner.style.display!=='none')?banner.offsetHeight:0;
+    const topOff=bh+(h?h.offsetHeight:0)+(t?t.offsetHeight:0)+(s?s.offsetHeight:0);
+    lv.style.paddingTop=(topOff+8)+'px';
+    renderList();
+  }
+  if(tab==='map' && map) google.maps.event.trigger(map,'resize');
+}
+
+// ---- STATS ----
+function parseLass(val){
+  if(!val || val==='') return 0;
+  if(val==='4+') return 4.5;
+  return parseFloat(val)||0;
+}
+
+function updateStats(){
+  const j=window.jobs;
+  const _fc=window.jobs.filter(j=>{ let t=false; if(filterType==='alla') t=true; else if(filterType==='rishög-lastbil') t=(j.typ==='rishög'||j.typ==='båda')&&!j.alstor; else if(filterType==='rishög-alstor') t=(j.typ==='rishög'||j.typ==='båda')&&j.alstor; else t=j.typ===filterType; return t&&(filterStatus==='alla'||j.status===filterStatus); }); document.getElementById('list-count').textContent=_fc.length;
+
+  const active = j.filter(x=>x.status!=='klar');
+  let lastbil=0, slapLass=0, alstor=0, stubbar=0, kundbesok=0;
+  active.forEach(x=>{
+    if(x.typ==='stubbe') stubbar++;
+    else if(x.typ==='kundbesök') kundbesok++;
+    else {
+      const l = parseLass(x.lass);
+      if(x.alstor){ alstor+=l; }
+      else { lastbil+=l; if(x.slap) slapLass+=l; }
+    }
+  });
+  document.getElementById('s-lastbil').textContent=lastbil%1===0?lastbil:lastbil.toFixed(1);
+  document.getElementById('s-slap').textContent=slapLass%1===0?slapLass:slapLass.toFixed(1);
+  document.getElementById('s-slap-wrap').style.display=slapLass>0?'flex':'none';
+  document.getElementById('s-alstor').textContent=alstor%1===0?alstor:alstor.toFixed(1);
+  document.getElementById('s-stubbar').textContent=stubbar;
+  document.getElementById('s-kundbesok').textContent=kundbesok;
+}
+
+// ---- FILTERS ----
+let lassFilter = null;
+function setLassFilter(val){
+  if(lassFilter === val){ lassFilter=null; filterType='alla'; } else { lassFilter=val; filterType=val; }
+  ['lf-lastbil','lf-alstor','lf-stubbe','lf-kb'].forEach(function(id){
+    var el=document.getElementById(id); if(!el) return;
+    var map={'lf-lastbil':'rishög-lastbil','lf-alstor':'rishög-alstor','lf-stubbe':'stubbe','lf-kb':'kundbesök'};
+    var active=lassFilter===map[id];
+    el.style.background=active?'rgba(232,240,232,0.9)':'rgba(255,255,255,0.1)';
+    el.style.borderColor=active?'#3d7a3d':'rgba(255,255,255,0.15)';
+    el.style.color=active?'#3d7a3d':'#e0e8e0';
+  });
+  renderList();
+  syncMarkers();
+}
+function setStatusFilter(val,el){
+  filterStatus=val;
+  document.querySelectorAll('#filters .filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+
+// ---- DAYS AGE ----
+function getDaysAge(skapad){
+  if(!skapad) return null;
+  const parts = skapad.split("/");
+  let date;
+  if(parts.length === 3){
+    if(parts[0].length === 4){ date = new Date(parts[0], parts[1]-1, parts[2]); }
+    else { date = new Date(parts[2], parts[1]-1, parts[0]); }
+  } else { date = new Date(skapad); }
+  if(isNaN(date)) return null;
+  const now = new Date();
+  const diff = Math.floor((now - date) / (1000*60*60*24));
+  return diff;
+}
+
+function daysTag(skapad){
+  const d = getDaysAge(skapad);
+  if(d === null) return "";
+  let color, dot;
+  if(d <= 2){ color="#10b981"; dot="🟢"; }
+  else if(d <= 7){ color="#f59e0b"; dot="🟡"; }
+  else { color="#ef4444"; dot="🔴"; }
+  const label = d === 0 ? "Idag" : d === 1 ? "1 dag" : d + " dagar";
+  return `<span class="tag" style="background:${color}22;color:${color};border:1px solid ${color}44">${dot} ${label}</span>`;
+}
+
+// ---- LIST ----
+function toggleManualMode(el){
+  manualMode = !manualMode;
+  el.classList.toggle('active', manualMode);
+  document.getElementById('manual-banner').style.display = manualMode ? 'block' : 'none';
+  if(manualMode && manualOrder.length === 0){
+    let filtered = window.jobs.filter(j=>(filterType==='alla'||j.typ===filterType)&&(filterStatus==='alla'||j.status===filterStatus))
+      .sort((a,b)=>(b.prioritet?1:0)-(a.prioritet?1:0));
+    manualOrder = filtered.map(j=>j.id);
+  }
+  renderList();
+}
+
+function saveManualOrder(){
+  // In-memory only for demo
+}
+
+function renderList(){
+  if(currentTab!=='list') return;
+  const list=document.getElementById('job-list');
+  let filtered=window.jobs.filter(j=>{
+    let typeMatch = false;
+    if(filterType==='alla') typeMatch=true;
+    else if(filterType==='rishög-lastbil') typeMatch=(j.typ==='rishög'||j.typ==='båda')&&!j.alstor;
+    else if(filterType==='rishög-alstor') typeMatch=(j.typ==='rishög'||j.typ==='båda')&&j.alstor;
+    else typeMatch=j.typ===filterType;
+    return typeMatch && (filterStatus==='alla'||j.status===filterStatus);
+  });
+
+  if(manualMode && manualOrder.length > 0){
+    const ordered = [];
+    manualOrder.forEach(id => { const j = filtered.find(x=>x.id===id); if(j) ordered.push(j); });
+    filtered.forEach(j => { if(!manualOrder.includes(j.id)) ordered.push(j); });
+    filtered = ordered;
+  } else {
+    filtered = filtered.sort((a,b)=>(b.prioritet?1:0)-(a.prioritet?1:0));
+  }
+
+  if(filtered.length===0){
+    list.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Inga punkter hittades</div><div class="empty-sub">Tryck + eller knappnål på kartan</div></div>`;
+    return;
+  }
+  list.innerHTML=filtered.map((j,i)=>{
+    const st=STATUS[j.status]||STATUS.väntar;
+    const tp=TYPE[j.typ]||TYPE.rishög;
+    const dragAttrs = manualMode ? `draggable="true" ondragstart="onDragStart(event,${i})" ondragover="onDragOver(event,${i})" ondragend="onDragEnd(event)" ondrop="onDrop(event,${i})" ontouchstart="onTouchStart(event,${i})" ontouchmove="onTouchMove(event)" ontouchend="onTouchEnd(event,${i})"` : '';
+    const clickHandler = manualMode ? '' : 'openDetail(\''+j.id+'\')';
+    return `<div class="job-card${j.prioritet?' prio':''}${manualMode?' drag-card':''}" data-id="${j.id}" data-index="${i}" ${dragAttrs} onclick="${clickHandler}" >
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        ${manualMode ? `<div style="display:flex;align-items:center;padding-right:10px;color:#8a9a8a;font-size:20px;cursor:grab;touch-action:none;">⠿</div>` : ''}
+        <div style="flex:1;padding-left:${j.prioritet?'8px':'0'}">
+          <div class="job-addr">${j.adress}</div>
+          ${j.kundnamn?`<div class="job-meta">${j.kundnamn}</div>`:''}
+          <div class="tags" style="margin-top:7px;">
+            <span class="tag" style="display:inline-flex;align-items:center;gap:3px;background:${TYPE_COLOR[j.typ]||'#3d7a3d'}18;color:${TYPE_COLOR[j.typ]||'#3d7a3d'};border:1px solid ${TYPE_COLOR[j.typ]||'#3d7a3d'}33;">${(TYPE_SVG[j.typ]||'').replace('currentColor',TYPE_COLOR[j.typ]||'#3d7a3d')} ${TYPE_LABEL[j.typ]||j.typ}</span>
+            <span class="tag" style="background:${st.bg};color:${st.color};border:1px solid ${st.color}33;">${st.label}</span>
+            ${j.prioritet?'<span class="tag" style="background:#fff8e8;color:#d97706;border:1px solid #f59e0b44;">⚡ Prio</span>':''}
+            ${j.alstor?'<span class="tag" style="background:#e8f0e8;color:#3d7a3d;border:1px solid #3d7a3d33;">Alstor</span>':''}
+            ${j.lass?'<span class="tag" style="background:#f4f5f0;color:#1a2a1a;border:1px solid #d0d8c8;">'+j.lass+' lass'+(j.slap?' +släp':'')+'</span>':''}
+            ${j.bk?'<span class="tag" style="background:#e8f0ff;color:#3355cc;border:1px solid #3355cc33;">🛣️ '+j.bk+'</span>':''}
+            ${daysTag(j.skapad)}
+            ${j.ordernr?'<span class="tag" style="background:#f4f5f0;color:#8a9a8a;border:1px solid #d0d8c8;">'+j.ordernr+'</span>':''}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <div class="job-num">#${i+1}</div>
+          ${manualMode
+            ? '<button onclick="event.stopPropagation();openDetail(\''+j.id+'\')" style="background:#e8f0e8;border:1px solid #3d7a3d;color:#3d7a3d;border-radius:8px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">👁 Visa</button>'
+            : '<button onclick="event.stopPropagation();goToMap(\''+j.id+'\')" style="background:#f4f5f0;border:1px solid #d0d8c8;color:#3d7a3d;border-radius:8px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">📍 Karta</button><button onclick="event.stopPropagation();openDirections('+j.lat+','+j.lng+')" style="background:#e8f0e8;border:1px solid #3d7a3d44;color:#3d7a3d;border-radius:8px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">🧭 Kör</button>'
+          }
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- DRAG & DROP (desktop) ----
+function onDragStart(e, idx){
+  dragSrcIndex = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '0.5';
+}
+function onDragOver(e, idx){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.drag-card').forEach((c,i)=>{ c.style.borderColor = i===idx ? '#7fc67e' : ''; });
+}
+function onDrop(e, idx){
+  e.preventDefault();
+  if(dragSrcIndex === null || dragSrcIndex === idx) return;
+  const newOrder = [...manualOrder];
+  const [moved] = newOrder.splice(dragSrcIndex, 1);
+  newOrder.splice(idx, 0, moved);
+  manualOrder = newOrder;
+  saveManualOrder();
+  dragSrcIndex = null;
+}
+function onDragEnd(e){
+  e.currentTarget.style.opacity = '';
+  document.querySelectorAll('.drag-card').forEach(c=>c.style.borderColor='');
+  dragSrcIndex = null;
+}
+
+// ---- TOUCH DRAG (mobile) ----
+let touchSrcIndex = null;
+let touchClone = null;
+let touchStartY = 0;
+function onTouchStart(e, idx){
+  touchSrcIndex = idx;
+  touchStartY = e.touches[0].clientY;
+  const card = e.currentTarget;
+  touchClone = card.cloneNode(true);
+  touchClone.style.cssText = `position:fixed;left:${card.getBoundingClientRect().left}px;top:${card.getBoundingClientRect().top}px;width:${card.offsetWidth}px;opacity:0.85;z-index:9999;pointer-events:none;transition:none;border-color:#3d7a3d;`;
+  document.body.appendChild(touchClone);
+  card.style.opacity = '0.3';
+}
+function onTouchMove(e){
+  if(!touchClone) return;
+  e.preventDefault();
+  const y = e.touches[0].clientY;
+  touchClone.style.top = (parseFloat(touchClone.style.top) + y - touchStartY) + 'px';
+  touchStartY = y;
+  const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+  const card = el ? el.closest('.drag-card') : null;
+  document.querySelectorAll('.drag-card').forEach(c=>c.style.borderColor='');
+  if(card) card.style.borderColor='#7fc67e';
+}
+function onTouchEnd(e, idx){
+  if(touchClone){ document.body.removeChild(touchClone); touchClone=null; }
+  document.querySelectorAll('.drag-card').forEach(c=>{ c.style.opacity=''; c.style.borderColor=''; });
+  const touch = e.changedTouches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const card = el ? el.closest('.drag-card') : null;
+  if(card){
+    const targetIdx = parseInt(card.dataset.index);
+    if(!isNaN(targetIdx) && targetIdx !== touchSrcIndex){
+      const newOrder = [...manualOrder];
+      const [moved] = newOrder.splice(touchSrcIndex, 1);
+      newOrder.splice(targetIdx, 0, moved);
+      manualOrder = newOrder;
+      saveManualOrder();
+    }
+  }
+  touchSrcIndex = null;
+}
+
+function goToMap(id){
+  const j=window.jobs.find(x=>x.id===id);
+  if(!j||!map) return;
+  switchTab('map');
+  map.panTo({lat:j.lat,lng:j.lng});
+  map.setZoom(15);
+  setTimeout(()=>{ if(markers[id]){ markers[id].setAnimation(google.maps.Animation.BOUNCE); setTimeout(()=>{ if(markers[id]) markers[id].setAnimation(null); },1500); } },300);
+}
+
+function openDirections(lat,lng){
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`,'_blank');
+}
+
+// ---- AUTOCOMPLETE ----
+function onAddrInput(){
+  const val=document.getElementById('f-addr').value;
+  clearTimeout(suggestTimer);
+  if(val.length<3){ hideSuggestions(); return; }
+  suggestTimer=setTimeout(()=>{
+    autocompleteService.getPlacePredictions({input:val,language:'sv',componentRestrictions:{country:'se'}},(preds,status)=>{
+      if(status!==google.maps.places.PlacesServiceStatus.OK||!preds){ hideSuggestions(); return; }
+      showSuggestions(preds.slice(0,5));
+    });
+  },300);
+}
+function showSuggestions(preds){
+  const box=document.getElementById('addr-suggestions');
+  box.style.display='block';
+  box.innerHTML=preds.map(p=>`<div class="addr-sug-item" onclick="selectSuggestion('${p.place_id}','${p.description.replace(/'/g,"\\'")}')">${p.description}</div>`).join('');
+}
+function hideSuggestions(){ document.getElementById('addr-suggestions').style.display='none'; }
+function selectSuggestion(placeId,desc){
+  document.getElementById('f-addr').value=desc;
+  hideSuggestions();
+  document.getElementById('geocode-status').style.display='block';
+  document.getElementById('geocode-status').textContent='📍 Hämtar koordinater...';
+  placesService.getDetails({placeId,fields:['geometry']},(place,status)=>{
+    if(status===google.maps.places.PlacesServiceStatus.OK){
+      pendingCoords={lat:place.geometry.location.lat(),lng:place.geometry.location.lng()};
+      document.getElementById('geocode-status').textContent='✅ Koordinater hittade';
+      setTimeout(()=>{ document.getElementById('geocode-status').style.display='none'; },2000);
+    }
+  });
+}
+
+// ---- ADD/EDIT ----
+function openAddModal(id=null, coords=null, addrPrefill=''){
+  editingId=id;
+  pendingCoords=coords;
+  const isEdit=id!==null;
+  const job=isEdit?window.jobs.find(j=>j.id===id):null;
+  document.getElementById('sheet-title').textContent=isEdit?'✏️ Redigera punkt':'➕ Ny punkt';
+  document.getElementById('f-addr').value=isEdit?job.adress:addrPrefill;
+  document.getElementById('f-kund').value=isEdit?(job.kundnamn||''):'';
+  document.getElementById('f-order').value=isEdit?(job.ordernr||''):'';
+  document.getElementById('f-note').value=isEdit?job.notering:'';
+  document.getElementById('save-btn').textContent=isEdit?'Spara ändringar':'Lägg till punkt';
+  hideSuggestions();
+  document.getElementById('geocode-status').style.display='none';
+  if(isEdit) pendingCoords={lat:job.lat,lng:job.lng};
+  resetImageUI();
+  if(isEdit && job.bildUrl){
+    editingImageUrl = job.bildUrl;
+    const preview = document.getElementById('img-preview');
+    preview.src = job.bildUrl;
+    preview.style.display='block';
+  }
+  setType(isEdit?job.typ:'rishög');
+  needsAlstor=isEdit?(job.alstor||false):false;
+  const hasRisEdit = isEdit && (job.typ==='rishög'||job.typ==='båda');
+  if(hasRisEdit){
+    document.getElementById('alstor-row').style.display='block';
+    document.getElementById('lass-row').style.display='block';
+    document.getElementById('slap-row').style.display='block';
+    setAlstor(job.alstor||false);
+    document.getElementById('f-lass').value = job.lass||'';
+    document.getElementById('f-slap').checked = job.slap||false;
+  } else {
+    document.getElementById('alstor-row').style.display='none';
+    document.getElementById('lass-row').style.display='none';
+    document.getElementById('slap-row').style.display='none';
+    setAlstor(false);
+    document.getElementById('f-lass').value = '';
+    document.getElementById('f-slap').checked = false;
+  }
+  isPrio=isEdit?job.prioritet:false;
+  updatePrioToggle();
+  showSheet('add-sheet');
+}
+
+function setType(t){
+  currentType=t;
+  ['rishög','stubbe','båda','kundbesök'].forEach(k=>document.getElementById('t-'+k).classList.toggle('active',k===t));
+  const alstorRow = document.getElementById('alstor-row');
+  const lassRow = document.getElementById('lass-row');
+  const slapRow = document.getElementById('slap-row');
+  if(t==='rishög' || t==='båda'){
+    alstorRow.style.display='block';
+    lassRow.style.display='block';
+    slapRow.style.display='block';
+  } else if(t==='stubbe'){
+    alstorRow.style.display='none';
+    lassRow.style.display='none';
+    slapRow.style.display='none';
+    needsAlstor=false;
+  } else {
+    alstorRow.style.display='none';
+    lassRow.style.display='none';
+    slapRow.style.display='none';
+    needsAlstor=false;
+  }
+}
+
+function setAlstor(val){
+  needsAlstor=val;
+  document.getElementById('alstor-ja').classList.toggle('active', val===true);
+  document.getElementById('alstor-nej').classList.toggle('active', val===false);
+}
+function togglePrio(){ isPrio=!isPrio; updatePrioToggle(); }
+function updatePrioToggle(){
+  document.getElementById('prio-toggle').classList.toggle('on',isPrio);
+  document.getElementById('prio-label').style.color=isPrio?'#f59e0b':'#5d7a8a';
+}
+
+async function saveJob(){
+  const addr=document.getElementById('f-addr').value.trim();
+  if(!addr) return;
+  const hasRisCheck = (currentType==='rishög'||currentType==='båda');
+  if(hasRisCheck && !document.getElementById('f-lass').value){
+    const lassEl = document.getElementById('f-lass');
+    lassEl.style.borderColor='#ef4444';
+    lassEl.focus();
+    setTimeout(()=>lassEl.style.borderColor='',2000);
+    return;
+  }
+  document.getElementById('save-btn').disabled=true;
+  document.getElementById('save-btn').textContent='Sparar...';
+  if(!pendingCoords){
+    document.getElementById('geocode-status').style.display='block';
+    document.getElementById('geocode-status').textContent='📍 Hämtar koordinater...';
+    try { pendingCoords=await geocodeAddress(addr); document.getElementById('geocode-status').style.display='none'; }
+    catch(e){ document.getElementById('geocode-status').textContent='❌ Kunde inte hitta adressen'; document.getElementById('save-btn').disabled=false; document.getElementById('save-btn').textContent='Lägg till punkt'; return; }
+  }
+
+  const hasRis = (currentType==='rishög'||currentType==='båda');
+  const jobData={
+    adress:addr,
+    kundnamn:document.getElementById('f-kund').value.trim(),
+    ordernr:document.getElementById('f-order').value.trim(),
+    notering:document.getElementById('f-note').value.trim(),
+    typ:currentType, prioritet:isPrio,
+    alstor: hasRis ? needsAlstor : false,
+    lass: hasRis ? (document.getElementById('f-lass').value || '') : '',
+    slap: hasRis && !needsAlstor ? document.getElementById('f-slap').checked : false,
+    lat:pendingCoords.lat, lng:pendingCoords.lng,
+    bk: '',
+    bildUrl: editingImageUrl || '',
+  };
+
+  if(editingId!==null){
+    dbUpdate(editingId, jobData);
+  } else {
+    dbAdd({...jobData, status:'väntar', skapad:new Date().toLocaleDateString('sv-SE')});
+  }
+  pendingCoords=null;
+  resetImageUI();
+  document.getElementById('save-btn').disabled=false;
+  closeSheets();
+}
+
+function geocodeAddress(addr){
+  return new Promise((res,rej)=>{
+    geocoder.geocode({address:addr+', Sverige'},(results,status)=>{
+      if(status==='OK'&&results[0]) res({lat:results[0].geometry.location.lat(),lng:results[0].geometry.location.lng()});
+      else rej(status);
+    });
+  });
+}
+
+// ---- DETAIL ----
+function openDetail(id){
+  const j=window.jobs.find(x=>x.id===id);
+  if(!j) return;
+  const st=STATUS[j.status]||STATUS.väntar;
+  const tp=TYPE[j.typ]||TYPE.rishög;
+  document.getElementById('detail-content').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+      <div style="flex:1;">
+        ${j.prioritet?'<div class="prio-badge">⚡ HÖG PRIORITET</div><br>':''}
+        <div style="font-weight:700;font-size:18px;">${j.adress}</div>
+        ${j.kundnamn?`<div style="color:#8a9a8a;font-size:13px;margin-top:3px;">${j.kundnamn}</div>`:''}
+      </div>
+      <div style="font-size:28px;margin-left:10px;">${tp.icon}</div>
+    </div>
+    <div class="info-grid">
+      <div class="info-card"><div class="info-card-label">TYP</div><div class="info-card-val">${tp.label}</div></div>
+      <div class="info-card"><div class="info-card-label">ORDERNR</div><div class="info-card-val">${j.ordernr||'—'}</div></div>
+      <div class="info-card" style="grid-column:span 2"><div class="info-card-label">SKAPAD</div><div class="info-card-val">${j.skapad} · ${(()=>{const d=getDaysAge(j.skapad);if(d===null)return'';let c,dot;if(d<=2){c='#10b981';dot='🟢';}else if(d<=7){c='#f59e0b';dot='🟡';}else{c='#ef4444';dot='🔴';}const l=d===0?'Idag':d===1?'1 dag':d+' dagar';return '<span style="color:'+c+'">'+dot+' '+l+'</span>';})()}</div></div>
+      <div class="info-card"><div class="info-card-label">STATUS</div><div class="info-card-val" style="color:${st.color}">${st.label}</div></div>
+      ${(j.typ==='rishög'||j.typ==='båda')?`<div class="info-card" style="grid-column:span 2;border-left:3px solid ${j.alstor?'#f59e0b':'#10b981'}"><div class="info-card-label">ALSTOR</div><div class="info-card-val" style="color:${j.alstor?'#f59e0b':'#10b981'}">${j.alstor?'🚜 Krävs – alstor kör ut riset först':'🚛 Nej – lastbilen kan köra direkt'}</div></div>`:''}
+      ${j.bk?`<div class="info-card" style="border-left:3px solid #3355cc"><div class="info-card-label">BK-KLASS</div><div class="info-card-val" style="color:#3355cc">🛣️ ${j.bk}</div></div>`:''}
+    </div>
+    ${j.notering?`<div class="note-box"><div class="note-label">NOTERING</div><div class="note-text">${j.notering}</div></div>`:''}
+    ${j.bildUrl?`<img src="${j.bildUrl}" class="img-thumb" onclick="window.open('${j.bildUrl}','_blank')" style="cursor:zoom-in;" alt="Platsbild"/>`:''}
+    <div style="font-size:10px;color:#8a9a8a;margin-bottom:6px;letter-spacing:.5px;">ÄNDRA STATUS</div>
+    <div class="status-btns">
+      ${Object.entries(STATUS).map(([k,s])=>`<button class="status-btn" onclick="setStatus('${j.id}','${k}')" style="border-color:${j.status===k?s.color:'#c0cac0'};color:${j.status===k?s.color:'#5d7a8a'};background:${j.status===k?s.bg:'#0f1923'}">${s.label}</button>`).join('')}
+    </div>
+    <button onclick="goToMap('${j.id}');closeSheets();" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #4a9eff44;background:#4a9eff11;color:#4a9eff;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:8px;font-family:'DM Sans',sans-serif;">📍 Visa på karta</button>
+    <button onclick="openDirections(${j.lat},${j.lng})" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #7fc67e44;background:#7fc67e11;color:#3d7a3d;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:10px;font-family:'DM Sans',sans-serif;">🧭 Vägbeskrivning i Google Maps</button>
+    <div class="action-row">
+      <button class="btn-secondary" style="flex:1;" onclick="closeSheets();openAddModal('${j.id}')">✏️ Redigera</button>
+      <button class="btn-danger" style="flex:1;" onclick="askDelete('${j.id}')">🗑️ Ta bort</button>
+    </div>
+  `;
+  showSheet('detail-sheet');
+}
+
+function setStatus(id,status){
+  dbUpdate(id,{status});
+  openDetail(id);
+}
+
+// ---- DELETE ----
+function askDelete(id){ deletingId=id; showSheet('confirm-sheet'); }
+function confirmDelete(){
+  if(!deletingId) return;
+  dbRemove(deletingId);
+  deletingId=null;
+  closeSheets();
+}
+
+// ---- SHEETS ----
+function showSheet(id){
+  document.getElementById('overlay').style.display='flex';
+  document.getElementById(id).style.display='block';
+}
+function closeSheets(){
+  ['add-sheet','detail-sheet','confirm-sheet'].forEach(id=>{ document.getElementById(id).style.display='none'; });
+  document.getElementById('overlay').style.display='none';
+  hideSuggestions();
+  resetImageUI();
+  pendingCoords=null;
+  editingId=null;
+}
+function closeOverlayClick(e){ if(e.target===document.getElementById('overlay')) closeSheets(); }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAB4x7U8tj_zBqG7sG97IitVxBDXlRRTvQ&libraries=places&callback=initMap" async defer></script>
+</body>
+</html>
